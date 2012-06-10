@@ -130,6 +130,46 @@ function parseIdentify(input) {
   return props[0];
 };
 
+
+
+exports.composite = function(pathOrArgs, callback) {
+  var isCustom = Array.isArray(pathOrArgs),
+      isData,
+      args = isCustom ? ([]).concat(pathOrArgs) : ['-verbose', pathOrArgs];
+
+  if (typeof args[args.length-1] === 'object') {
+    isData = true;
+    pathOrArgs = args[args.length-1];
+    args[args.length-1] = '-';
+    if (!pathOrArgs.data)
+      throw new Error('first argument is missing the "data" member');
+  } else if (typeof pathOrArgs === 'function') {
+    args[args.length-1] = '-';
+    callback = pathOrArgs;
+  }
+  var proc = exec2(exports.composite.path, args, {timeout:120000}, function(err, stdout, stderr) {
+    var result;
+    if (!err) {
+      result = err
+    }
+    callback(err, result);
+  });
+  if (isData) {
+    if ('string' === typeof pathOrArgs.data) {
+      proc.stdin.setEncoding('binary');
+      proc.stdin.write(pathOrArgs.data, 'binary');
+      proc.stdin.end();
+    } else {
+      proc.stdin.end(pathOrArgs.data);
+    }
+  }
+  return proc;
+}
+exports.composite.path = 'composite';
+
+
+
+
 exports.identify = function(pathOrArgs, callback) {
   var isCustom = Array.isArray(pathOrArgs),
       isData,
